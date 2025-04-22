@@ -12,7 +12,7 @@ async function insertToOpLog(operationName, operationData, dbType) {
     const logLine = JSON.stringify(operation) + '\n';
     console.log('Logging operation:', logLine);
     try {
-        await fs.appendFile(`OpLogs/opLog_${dbType}.json`, logLine);
+        await fs.appendFile(`OpLogs/opLog_${dbType}.jsonl`, logLine);
         console.log('Operation logged:', operation);
     } catch (err) {
         console.error('Error writing to opLog:', err);
@@ -20,7 +20,7 @@ async function insertToOpLog(operationName, operationData, dbType) {
 }
 
 async function flushOpLog(dbType, newOps) {
-    const opLogFile = `OpLogs/opLog_${dbType}.json`;
+    const opLogFile = `OpLogs/opLog_${dbType}.jsonl`;
     const result = newOps.map(op => JSON.stringify(op)).join('\n') + '\n';
 
     try {
@@ -34,7 +34,7 @@ async function flushOpLog(dbType, newOps) {
         
         
 async function readFromOpLog(dbType) {
-    const opLogFile = `OpLogs/opLog_${dbType}.json`;
+    const opLogFile = `OpLogs/opLog_${dbType}.jsonl`;
     const readline = require('readline');
     const fsStream = require('fs');
 

@@ -30,10 +30,6 @@ class MongoOps {
                     result = await collection.updateOne({ studentID: data.studentID, courseID: data.courseID }, { $set: { grade: data.grade } });
                     await insertToOpLog('update', data, 'MongoDB');
                     break;
-                case 'delete':
-                    result = await collection.deleteMany({ studentID: data.studentID });
-                    await insertToOpLog('delete', data, 'MongoDB');
-                    break;
                 default:
                     throw new Error('Invalid operation');
             }
@@ -45,24 +41,64 @@ class MongoOps {
             
             const operations =await readFromOpLog(dbType);
             const mongoOpLog=await readFromOpLog('MongoDB');
-       
-            for (const operation of operations) {
+
+            if(operations.length==0) {
+                console.log('No operations to merge');
+                return;
+            }
+            
+            let lastSyncTime = 0;
+
+            if (dbType == 'Pig') {
+                lastSyncTime = this.LstSyncWithPig;
+            } 
+        
+            else if (dbType == 'Postgres') {
+                lastSyncTime = this.LstSyncWithPostgres;
+            }
+
+            let low=0;
+            let high=operations.length-1;
+            lastSyncTime=new Date(lastSyncTime).getTime();
+        
+
+            while (low <= high) {
+                let mid = Math.floor((low + high) / 2);
+                let timestamp = new Date(operations[mid].timestamp).getTime();
+                if (timestamp === lastSyncTime) {
+                    low = mid;
+                    break;
+                } else if (timestamp < lastSyncTime) {
+                    low = mid + 1;
+                } else {
+                    high = mid - 1;
+                }
+            }
+            
+            for (let i = low; i < operations.length; i++) {
+                const operation = operations[i];
                 const { timestamp,type, data } = operation;
-                if(timestamp>this.LstSyncWithPig && dbType=='Pig' || timestamp>this.LstSyncWithPostgres && dbType=='Postgres'){
+                timestamp = new Date(timestamp).getTime();
+                if(timestamp>lastSyncTime) {
                     try {
-                        if ((type=='update' && mongoOpLog.some(op=> op.data.studentID==data.studentID && op.data.courseID==data.courseID && op.timestamp<timestamp)) || type!='update') 
+                        if ((type=='update' && mongoOpLog.some(op=> op.data.studentID==data.studentID && op.data.courseID==data.courseID)) || type!='update') 
                             await this.performOperation(type, data);
                         mongoOpLog.push(operation);
                     } catch (err) {
                         console.error('Error performing operation:', err);
                     }
                 }
-                
-                //write the sorted operations to a new file
-                
+                                
             }
+
             sortedOps = mongoOpLog.sort((a, b) => new Date(a.timestamp) < new Date(b.timestamp));
-          
+
+            if(dbType == 'Pig') {
+                this.LstSyncWithPig = operations[operations.length - 1].timestamp;
+            }
+            else if(dbType == 'Postgres') {
+                this.LstSyncWithPostgres = operations[operations.length - 1].timestamp;
+            }
             await flushOpLog("MongoDB",sortedOps);
 
         }
