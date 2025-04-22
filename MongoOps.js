@@ -66,6 +66,10 @@ class MongoOps {
             await flushOpLog("MongoDB",sortedOps);
 
         }
+        async close() {
+            await this.mongoose.connection.close();
+            console.log('MongoDB connection closed');
+        }
 }
 // do an example update operation
 const mongoOps = new MongoOps('mongodb://localhost:27017/testdb');
@@ -81,3 +85,10 @@ mongoOps.performOperation('update', data)
     .catch((err) => {
         console.error('Error performing operation:', err);
     })
+mongoOps.close()
+    .then(() => {
+        console.log('MongoDB connection closed');
+    })
+    .catch((err) => {
+        console.error('Error closing MongoDB connection:', err);
+    });
