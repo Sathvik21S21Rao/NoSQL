@@ -2,7 +2,7 @@ const fs = require('fs').promises;
 
 
 
-async function insertToOpLog(collectionName,fieldName,operationName, operationData, dbType) {
+async function insertToOpLog(collectionName, fieldName, operationName, operationData, dbType) {
     const operation = {
         collection: collectionName,
         field: fieldName,
@@ -33,8 +33,8 @@ async function flushOpLog(dbType, newOps) {
     }
 }
 
-        
-        
+
+
 async function readFromOpLog(dbType) {
     const opLogFile = `OpLogs/opLog_${dbType}.jsonl`;
     const readline = require('readline');
