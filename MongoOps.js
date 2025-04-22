@@ -1,6 +1,6 @@
 const { mongo } = require('mongoose');
 const { insertToOpLog, readFromOpLog, flushOpLog } = require('./opLog');
-
+const fs = require('fs').promises;
 class MongoOps {
     constructor(url){
         this.url = url;
@@ -9,6 +9,7 @@ class MongoOps {
         this.LstSyncWithPig = new Date(0).getTime();
         this.LstSyncWithPostgres = new Date(0).getTime();
     }
+        
         async connect() {
             try {
                 await this.mongoose.connect(this.url, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -16,6 +17,18 @@ class MongoOps {
             } catch (error) {
                 console.error('Error connecting to MongoDB:', error);
             }
+            
+            try {
+                const data = await fs.readFile("OpLogs/Mongo_LastSync.json", 'utf8');
+                const json = JSON.parse(data);
+                console.log('Read from file:', json);
+                this.LstSyncWithPig = json.LstSyncWithPig;
+                this.LstSyncWithPostgres = json.LstSyncWithPostgres;
+                console.log('Last sync times:', this.LstSyncWithPig, this.LstSyncWithPostgres);
+            } catch (err) {
+                
+            }
+
         }
 
         async performOperation(collectionName,fieldName,operation, data) {
@@ -41,7 +54,6 @@ class MongoOps {
         }
 
         async merge(dbType) {
-            const fs = require('fs');
             
             const operations =await readFromOpLog(dbType);
             const mongoOpLog=await readFromOpLog('MongoDB');
@@ -63,14 +75,15 @@ class MongoOps {
 
             let low=0;
             let high=operations.length-1;
-            lastSyncTime=new Date(lastSyncTime).getTime();
+            
         
-
+            
             while (low <= high) {
                 let mid = Math.floor((low + high) / 2);
                 let timestamp = operations[mid].timestamp;
+                
                 if (timestamp === lastSyncTime) {
-                    low = mid;
+                    low = mid+1;
                     break;
                 } else if (timestamp < lastSyncTime) {
                     low = mid + 1;
@@ -78,6 +91,7 @@ class MongoOps {
                     high = mid - 1;
                 }
             }
+           
             
             for (let i = low; i < operations.length; i++) {
                 const operation = operations[i];
@@ -101,7 +115,15 @@ class MongoOps {
             else if(dbType == 'Postgres') {
                 this.LstSyncWithPostgres = operations[operations.length - 1].timestamp;
             }
+
             await flushOpLog("MongoDB",sortedOps);
+
+            try {
+                await fs.writeFile("OpLogs/Mongo_LastSync.json", JSON.stringify({ LstSyncWithPig: this.LstSyncWithPig, LstSyncWithPostgres: this.LstSyncWithPostgres }));
+            }
+            catch (err) {
+                console.error('Error writing to file:', err);
+            }
 
         }
         async close() {
@@ -138,4 +160,9 @@ async function updateMongo() {
         await mongoOps.close();
     }
 }
-mergerun();
+async function run() {
+    await updateMongo();
+    await mergerun();
+    await mergerun();
+}
+run();
