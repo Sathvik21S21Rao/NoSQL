@@ -51,9 +51,9 @@ async function setupAndLoad() {
     await client.query(
         `CREATE TABLE ${tableName} 
         (
-            student_id VARCHAR,
-            course_id  VARCHAR,
-            roll_no    VARCHAR,
+            studentid VARCHAR,
+            courseid  VARCHAR,
+            rollno    VARCHAR,
             email      VARCHAR,
             grade      VARCHAR
         );`
@@ -67,7 +67,7 @@ async function setupAndLoad() {
       .pipe(csv())
       .on('data', (row) => {
         const query = {
-          text: `INSERT INTO ${tableName} (student_id, course_id, roll_no, email, grade) VALUES ($1, $2, $3, $4, $5)`,
+          text: `INSERT INTO ${tableName} (studentid, courseid, rollno, email, grade) VALUES ($1, $2, $3, $4, $5)`,
           values: [
             row['student-ID'],
             row['course-id'],
