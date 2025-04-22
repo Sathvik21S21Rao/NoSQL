@@ -12,8 +12,8 @@ class MongoOps {
             .catch((err) => {
                 console.error('MongoDB connection error:', err);
             });
-        this.LstSyncWithPig=0;
-        this.LstSyncWithPostgres=0;
+        this.LstSyncWithPig=new Date(0).getTime();
+        this.LstSyncWithPostgres=new Date(0).getTime();
         }
 
         async performOperation(operation, data) {
@@ -46,7 +46,7 @@ class MongoOps {
                 console.log('No operations to merge');
                 return;
             }
-            
+
             let lastSyncTime = 0;
 
             if (dbType == 'Pig') {
@@ -94,10 +94,10 @@ class MongoOps {
             sortedOps = mongoOpLog.sort((a, b) => new Date(a.timestamp) < new Date(b.timestamp));
 
             if(dbType == 'Pig') {
-                this.LstSyncWithPig = operations[operations.length - 1].timestamp;
+                this.LstSyncWithPig = new Date(operations[operations.length - 1].timestamp).getTime();
             }
             else if(dbType == 'Postgres') {
-                this.LstSyncWithPostgres = operations[operations.length - 1].timestamp;
+                this.LstSyncWithPostgres = new Date(operations[operations.length - 1].timestamp).getTime();
             }
             await flushOpLog("MongoDB",sortedOps);
 
