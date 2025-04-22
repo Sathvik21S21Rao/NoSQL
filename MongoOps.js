@@ -1,6 +1,5 @@
 const { insertToOpLog, readFromOpLog, flushOpLog } = require('./opLog');
 
-console.log(insertToOpLog, readFromOpLog, flushOpLog);
 class MongoOps {
     constructor(url){
         this.url = url;
@@ -64,7 +63,7 @@ class MongoOps {
             }
             sortedOps = mongoOpLog.sort((a, b) => new Date(a.timestamp) < new Date(b.timestamp));
           
-            await flushOpLog(dbType,sortedOps);
+            await flushOpLog("MongoDB",sortedOps);
 
         }
 }
