@@ -1,3 +1,4 @@
+const { mongo } = require('mongoose');
 const { insertToOpLog, readFromOpLog, flushOpLog } = require('./opLog');
 
 class MongoOps {
@@ -5,30 +6,33 @@ class MongoOps {
         this.url = url;
         this.mongoose = require('mongoose');
         this.mongoose.set('strictQuery', false);
-        this.mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
-            .then(() => {
+        this.LstSyncWithPig = new Date(0).getTime();
+        this.LstSyncWithPostgres = new Date(0).getTime();
+    }
+        async connect() {
+            try {
+                await this.mongoose.connect(this.url, { useNewUrlParser: true, useUnifiedTopology: true });
                 console.log('MongoDB connected');
-            })
-            .catch((err) => {
-                console.error('MongoDB connection error:', err);
-            });
-        this.LstSyncWithPig=new Date(0).getTime();
-        this.LstSyncWithPostgres=new Date(0).getTime();
+            } catch (error) {
+                console.error('Error connecting to MongoDB:', error);
+            }
         }
 
-        async performOperation(operation, data) {
-            const collectionName = 'studentgrades';
+        async performOperation(collectionName,fieldName,operation, data) {
+            
             const collection = this.mongoose.connection.collection(collectionName);
             let result;
             console.log('Performing operation:', operation, 'with data:', data);
             switch (operation) {
                 case 'insert':
                     result = await collection.insertOne(data);
-                    await insertToOpLog('insert', data, 'MongoDB');
+                    await insertToOpLog(collectionName,fieldName,'insert', data, 'MongoDB');
                     break;
                 case 'update': // to update only grade field
-                    result = await collection.updateOne({ studentID: data.studentID, courseID: data.courseID }, { $set: { grade: data.grade } });
-                    await insertToOpLog('update', data, 'MongoDB');
+                    console.log('collection',collectionName,'Updating field:', fieldName, 'with value:', data[fieldName]);
+
+                    result = await collection.updateOne({ studentID: data.studentID, courseID: data.courseID }, { $set: { fieldName: data[fieldName] } });
+                    await insertToOpLog(collectionName,fieldName,'update', data, 'MongoDB');
                     break;
                 default:
                     throw new Error('Invalid operation');
@@ -64,7 +68,7 @@ class MongoOps {
 
             while (low <= high) {
                 let mid = Math.floor((low + high) / 2);
-                let timestamp = new Date(operations[mid].timestamp).getTime();
+                let timestamp = operations[mid].timestamp;
                 if (timestamp === lastSyncTime) {
                     low = mid;
                     break;
@@ -77,27 +81,25 @@ class MongoOps {
             
             for (let i = low; i < operations.length; i++) {
                 const operation = operations[i];
-                const { timestamp,type, data } = operation;
-                timestamp = new Date(timestamp).getTime();
-                if(timestamp>lastSyncTime) {
-                    try {
-                        if ((type=='update' && mongoOpLog.some(op=> op.data.studentID==data.studentID && op.data.courseID==data.courseID)) || type!='update') 
-                            await this.performOperation(type, data);
-                        mongoOpLog.push(operation);
-                    } catch (err) {
-                        console.error('Error performing operation:', err);
-                    }
+                const { timestamp,collection,field,type, data } = operation;
+                try {
+                    await this.performOperation(collection,field,type, data);
+                    mongoOpLog.push(operation);
+                } catch (err) {
+                    console.error('Error performing operation:', err);
                 }
+                
                                 
             }
 
-            sortedOps = mongoOpLog.sort((a, b) => new Date(a.timestamp) < new Date(b.timestamp));
+            let sortedOps = mongoOpLog.sort((a, b) => a.timestamp < b.timestamp ? -1 : 1);
+            console.log('Sorted operations:', sortedOps);
 
             if(dbType == 'Pig') {
-                this.LstSyncWithPig = new Date(operations[operations.length - 1].timestamp).getTime();
+                this.LstSyncWithPig = operations[operations.length - 1].timestamp;
             }
             else if(dbType == 'Postgres') {
-                this.LstSyncWithPostgres = new Date(operations[operations.length - 1].timestamp).getTime();
+                this.LstSyncWithPostgres = operations[operations.length - 1].timestamp;
             }
             await flushOpLog("MongoDB",sortedOps);
 
@@ -107,24 +109,33 @@ class MongoOps {
             console.log('MongoDB connection closed');
         }
 }
-// do an example update operation
-const mongoOps = new MongoOps('mongodb://localhost:27017/testdb');
-const data = {
-    studentID: 'SID1033',
-    courseID: 'CSE016',
-    grade: 'B',
-};
-mongoOps.performOperation('update', data)
-    .then(() => {
-        console.log('Operation completed successfully');
-    })
-    .catch((err) => {
-        console.error('Error performing operation:', err);
-    })
-mongoOps.close()
-    .then(() => {
-        console.log('MongoDB connection closed');
-    })
-    .catch((err) => {
-        console.error('Error closing MongoDB connection:', err);
-    });
+
+
+async function mergerun() {
+    const mongoOps = new MongoOps('mongodb://localhost:27017/testdb');
+
+    try {
+        await mongoOps.connect();
+        await mongoOps.merge('Pig');
+        console.log('Merge completed successfully');
+    } catch (err) {
+        console.error('Error during merge:', err);
+    } finally {
+        await mongoOps.close();
+    }
+}
+
+async function updateMongo() {
+    const mongoOps = new MongoOps('mongodb://localhost:27017/testdb');
+
+    try {
+        await mongoOps.connect();
+        await mongoOps.performOperation('studentgrades','grade','update', { studentID: 'SID1033', courseID: 'CSE016', grade: 'A+' });
+        console.log('Update completed successfully');
+    } catch (err) {
+        console.error('Error during update:', err);
+    } finally {
+        await mongoOps.close();
+    }
+}
+mergerun();

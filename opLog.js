@@ -2,8 +2,10 @@ const fs = require('fs').promises;
 
 
 
-async function insertToOpLog(operationName, operationData, dbType) {
+async function insertToOpLog(collectionName,fieldName,operationName, operationData, dbType) {
     const operation = {
+        collection: collectionName,
+        field: fieldName,
         timestamp: new Date().toISOString(),
         type: operationName,
         data: operationData,
@@ -50,6 +52,7 @@ async function readFromOpLog(dbType) {
         rl.on('line', (line) => {
             try {
                 const operation = JSON.parse(line);
+                operations.timestamp = new Date(operation.timestamp).getTime();
                 operations.push(operation);
             } catch (err) {
                 console.error('Error parsing line:', err);
