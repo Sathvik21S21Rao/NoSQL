@@ -13,6 +13,20 @@ class PostgreSQLOps {
         this.dbname = config.database;
         this.LstSyncWithPig = new Date(0).getTime();
         this.LstSyncWithMongo = new Date(0).getTime();
+
+        try {
+            const mergedData = fs.readFileSync('OpLogs/Postgres_LastSync.json', 'utf8');
+            const json = JSON.parse(mergedData);
+            console.log('Read from file:', json);
+            this.LstSyncWithPig = json.LstSyncWithPig;
+            this.LstSyncWithMongo = json.LstSyncWithMongo;
+            console.log('Last sync times:', this.LstSyncWithPig, this.LstSyncWithMongo);
+        }
+        catch (err) {
+            console.error('Could not find Last synced times file:', err);
+            console.log('Initializing with default values');
+        }
+
     }
 
     async performOperation(table, fieldName, operation, data) {
@@ -23,8 +37,8 @@ class PostgreSQLOps {
         switch (operation) {
             case 'insert':
                 result = await this.runQuery(
-                    `INSERT INTO ${tableName} (studentid, courseid, grade) VALUES ($1, $2, $3) RETURNING *`,
-                    [data.studentID, data.courseID, data.grade]
+                    `INSERT INTO ${tableName} (studentid, courseid, rollno , email , grade) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+                    [data.studentID, data.courseID, data.rollno, data.email, data.grade]
                 );
                 await insertToOpLog(this.dbname, fieldName, 'insert', data, 'Postgres');
                 break;
