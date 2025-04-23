@@ -1,4 +1,4 @@
-const { mongo } = require('mongoose');
+const { mongo, model } = require('mongoose');
 const { insertToOpLog, readFromOpLog, flushOpLog } = require('./opLog');
 const fs = require('fs').promises;
 
@@ -57,6 +57,21 @@ class MongoOps {
         }
         return result;
     }
+
+    async readRecord(collectionName, studentID, courseID) {
+        const collection = this.mongoose.connection.collection(collectionName);
+        try {
+            const result = await collection.findOne({ studentID, courseID });
+            if (result) {
+                console.log('Record found:', result);
+            } else {
+                console.log('Record not found.');
+            }
+        } catch (err) {
+            console.error('Error reading record:', err);
+        }
+    }
+
 
     mergeSortedLogs(log1, log2) {
         let merged = [];
@@ -192,7 +207,7 @@ async function mergerun() {
 
     try {
         await mongoOps.connect();
-        await mongoOps.merge('Pig');
+        await mongoOps.merge('Postgres');
         console.log('Merge completed successfully');
     } catch (err) {
         console.error('Error during merge:', err);
@@ -220,4 +235,5 @@ async function run() {
 
 
 }
-run();
+// run();
+module.exports = MongoOps;
