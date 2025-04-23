@@ -16,7 +16,7 @@ const connectPostgres = async (config) => {
 };
 
 // Load CSV to PostgreSQL
-async function loadData({ config, tableName, csvFilePath, columnMapping }) {
+async function loadData({ config, tableName, csvFilePath, columnMapping, schema}) {
     const client = await connectPostgres(config);
 
     // Drop table if exists
@@ -24,16 +24,7 @@ async function loadData({ config, tableName, csvFilePath, columnMapping }) {
     console.log(`Table "${tableName}" dropped`);
 
     // Create table
-    await client.query(`
-        CREATE TABLE ${tableName} (
-            studentid TEXT,
-            courseid TEXT,
-            rollno TEXT,
-            email TEXT,
-            grade TEXT NOT NULL,
-            PRIMARY KEY (studentid, courseid)
-        );
-    `);
+    await client.query(schema);
     console.log(`Table "${tableName}" created`);
 
     const csvData = [];
@@ -68,16 +59,32 @@ async function loadData({ config, tableName, csvFilePath, columnMapping }) {
 
 // Run only when this file is executed directly
 if (require.main === module) {
-    const config = {
-        user: 'myuser',
-        host: '127.0.0.1',
-        database: 'studentgrades',
-        password: 'nosql',
-        port: 5432,
-    };
 
+    const databaseName = 'studentgrades';
+    const host = '127.0.0.1';
+    const user = 'myuser';
+    const password = 'nosql';
+    const port = 5432;
     const tableName = 'studentgrades';
     const csvFilePath = './student_course_grades.csv';
+
+    const schema = 
+        `CREATE TABLE ${tableName} (
+            studentid TEXT,
+            courseid TEXT,
+            rollno TEXT,
+            email TEXT,
+            grade TEXT NOT NULL,
+            PRIMARY KEY (studentid, courseid)
+        );`;
+
+    const config = {
+        user: user,
+        host: host,
+        database: databaseName,
+        password: password,
+        port: port,
+    };
 
     const columnMapping = {
         studentID: 'student-ID',
@@ -91,7 +98,8 @@ if (require.main === module) {
         config,
         tableName,
         csvFilePath,
-        columnMapping
+        columnMapping,
+        schema
     }).catch((err) => {
         console.error(`Error loading data: ${err.message}`);
     });
