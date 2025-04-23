@@ -1,6 +1,7 @@
 const { Client } = require('pg');
 const fs = require('fs');
 const csv = require('csv-parser');
+const dotenv = require('dotenv');
 
 // PostgreSQL connection
 const connectPostgres = async (config) => {
@@ -60,13 +61,16 @@ async function loadData({ config, tableName, csvFilePath, columnMapping, schema}
 // Run only when this file is executed directly
 if (require.main === module) {
 
-    const databaseName = 'studentgrades';
-    const host = '127.0.0.1';
-    const user = 'myuser';
-    const password = 'nosql';
-    const port = 5432;
+    // Reading config from .env file
+    dotenv.config();
+    const user = process.env.POST_USER;
+    const host = process.env.POST_HOST;
+    const databaseName = process.env.POST_DBNAME;
+    const password = process.env.POST_PASSWORD;
+    const port = process.env.POST_PORT;
     const tableName = 'studentgrades';
-    const csvFilePath = './student_course_grades.csv';
+    const csvFilePath = process.env.POST_CSV || 'student_course_grades.csv';
+    
 
     const schema = 
         `CREATE TABLE ${tableName} (
