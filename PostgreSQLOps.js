@@ -2,6 +2,8 @@
 const { Client } = require('pg');
 const { insertToOpLog, readFromOpLog, flushOpLog } = require('./opLog');
 const { model } = require('mongoose');
+const fs = require('fs');
+
 
 class PostgreSQLOps {
 
@@ -216,8 +218,8 @@ async function testQueries() {
     const db = new PostgreSQLOps({
         host: '127.0.0.1',
         port: 5432,
-        user: 'vishruthvijay',
-        password: '',
+        user: 'postgres',
+        password: 'sid194',
         database: 'studentgrades',
     });
 
@@ -231,5 +233,5 @@ async function testQueries() {
     }
 }
 
-// testQueries();
+testQueries();
 module.exports = PostgreSQLOps;

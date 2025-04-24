@@ -1,9 +1,13 @@
 
-            student_data = LOAD 'student_course_grades.csv' USING PigStorage(',') 
-                AS (student_id:chararray, course_id:chararray, roll_no:chararray, email:chararray, grade:chararray);
-
-            student_data_selected = FILTER student_data BY
-                student_id == 'SID1033' AND course_id == 'CSE016';
-
-            DUMP student_data_selected;
-        
+                student_data = LOAD 'studentgrades' USING PigStorage(',') 
+                    AS (student_id:chararray, course_id:chararray, roll_no:chararray, email:chararray, grade:chararray);
+    
+                student_data_new = FOREACH student_data GENERATE
+                    student_id,
+                    course_id,
+                    roll_no,
+                    email,
+                    (student_id == 'SID1033' AND course_id == 'CSE016' ? 'D' : grade) AS grade;
+    
+                STORE student_data_new INTO '/user/hadoop1/temp' USING PigStorage(',');
+            

@@ -7,6 +7,7 @@ const Pig_HDFS_Path = '/user/hadoop1'
 const HADOOP_HOME_var = '/home/hadoop1/hadoop'
 const JAVA_HOME_var = '/usr/lib/jvm/java-21-openjdk-amd64'
 const PATH_env_var = ':/home/siddharth/Downloads/nosql/assn3/pig/pig/bin'
+const CollectionName = 'studentgrades'
 
 
 function execCommand(command) 
@@ -252,7 +253,7 @@ class PigOps {
 
         }
 
-        let sortedOps = this.mergeSortedLogs(newOps, mongoOpLog);
+        let sortedOps = this.mergeSortedLogs(newOps, PigOpLog);
 
         low = 0;
         high = sortedOps.length - 1;
@@ -320,7 +321,7 @@ class PigOps {
     {
         if (type === "update")
         {
-            await updatePig(inputHdfsPath, field, type, data);
+            await this.updatePig(inputHdfsPath, field, type, data);
         }
         if (type === "read")
         {
@@ -331,12 +332,13 @@ class PigOps {
 
 async function runPigOps() 
 {
-    const pigOps = new PigOps(`${Pig_HDFS_Path}/student_course_grades.csv`);
+    const pigOps = new PigOps(`${Pig_HDFS_Path}/${CollectionName}`);
     await pigOps.initializePigOps();
     try 
     {
-        // await pigOps.updatePig('student_course_grades.csv', 'grade', 'update', { studentID: 'SID1033', courseID: 'CSE016', grade: 'A+' })
-        await pigOps.readRecord('student_course_grades.csv', 'SID1033', 'CSE016');
+        // await pigOps.updatePig('studentgrades', 'grade', 'update', { studentID: 'SID1033', courseID: 'CSE016', grade: 'A+' })
+        // await pigOps.readRecord('student_course_grades.csv', 'SID1033', 'CSE016');
+        await pigOps.merge("Postgres");
     } 
     catch (err) 
     {

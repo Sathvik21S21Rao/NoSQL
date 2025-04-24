@@ -3,10 +3,11 @@ const fs = require('fs');
 
 const CSV_filepath = './student_course_grades.csv';
 const pigScriptPath = './student_grades.pig';
-const CSV_hdfs_filepath = '/student_course_grades.csv';
+const CSV_hdfs_filepath = 'studentgrades';
 const Pig_HDFS_Path = '/user/hadoop1/'
 
 const HDFS_put = `hdfs dfs -put ${CSV_filepath} ${Pig_HDFS_Path}`;
+const HDFS_rename = `hdfs dfs -mv ${Pig_HDFS_Path}${CSV_filepath} ${Pig_HDFS_Path}studentgrades`;
 const pigCommand = `pig -x mapreduce -f ${pigScriptPath}`;
 
 function execCommand(command) 
@@ -35,8 +36,10 @@ function execCommand(command)
 //      moves part-m-00000 (pig output) to /user/hadoop1/student_course_grades.csv
 //      deletes /student_data temp folder
 
-async function executePigCommand() {
+async function executePigCommand() 
+{
   await execCommand(HDFS_put);
+  await execCommand(HDFS_rename);
   await execCommand(pigCommand);
   await execCommand(`hdfs dfs -rm -r /user/hadoop1/${CSV_hdfs_filepath}`);
   await execCommand(`hdfs dfs -mv /student_data/part-m-00000 /user/hadoop1/${CSV_hdfs_filepath}`);
