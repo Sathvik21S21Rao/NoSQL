@@ -3,3 +3,4 @@
 *.csv
 /OpLogs
 .env
+/insertion_creation/node_modules
