@@ -40,7 +40,7 @@ class PigOps {
     async initializePigOps() {
         try 
         {
-            const data = await fs.readFile("OpLogs/Mongo_LastSync.json", 'utf8');
+            const data = await fs.readFile("OpLogs/Pig_LastSync.json", 'utf8');
             const json = JSON.parse(data);
             this.LstSyncWithMongo = json.LstSyncWithMongo || new Date(0).getTime();
             this.LstSyncWithPostgres = json.LstSyncWithPostgres || new Date(0).getTime();
