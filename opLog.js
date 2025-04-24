@@ -1,7 +1,5 @@
 const fs = require('fs').promises;
 
-
-
 async function insertToOpLog(collectionName, fieldName, operationName, operationData, dbType) {
     const operation = {
         collection: collectionName,

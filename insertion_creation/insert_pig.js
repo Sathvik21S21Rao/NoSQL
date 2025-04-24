@@ -3,36 +3,46 @@ const fs = require('fs');
 
 const CSV_filepath = './student_course_grades.csv';
 const pigScriptPath = './student_grades.pig';
+const CSV_hdfs_filepath = '/student_course_grades.csv';
+const Pig_HDFS_Path = '/user/hadoop1/'
 
-const HDFS_put = `hdfs dfs -put ${CSV_filepath} /user/hadoop1/`;
+const HDFS_put = `hdfs dfs -put ${CSV_filepath} ${Pig_HDFS_Path}`;
 const pigCommand = `pig -x mapreduce -f ${pigScriptPath}`;
 
-function executePigCommand() {
-
-    exec(HDFS_put, (err, stdout, stderr) => {
-        if (err) {
-        console.error(`Error executing HDFS Put command: ${err.message}`);
-        return;
+function execCommand(command) 
+{
+  return new Promise((resolve, reject) => 
+    {
+    exec(command, (err, stdout, stderr) => 
+      {
+      if (err) 
+        {
+        console.error(`Error executing: ${command}\n${err.message}`);
+        return reject(err);
         }
-        if (stderr) {
-        console.error(`HDFS Put command stderr: ${stderr}`);
-        return;
-        }
-        console.log(`HDFS Put command executed successfully: ${stdout}`);
+      if (stderr) console.error(`stderr: ${stderr}`);
+      console.log(`stdout for "${command}":\n${stdout}`);
+      resolve(stdout);
     });
-
-    exec(pigCommand, (err, stdout, stderr) => {
-        if (err) {
-        console.error(`Error executing Pig command: ${err.message}`);
-        return;
-        }
-        if (stderr) {
-        console.error(`Pig command stderr: ${stderr}`);
-        return;
-        }
-        console.log(`Pig command executed successfully: ${stdout}`);
-    });
+  });
 }
+
+
+// What is happening here:
+//      puts csv file into hdfs at /user/hadoop1/student_course_grades.csv
+//      executes pig, which saves data into /student-data/part-m-00000
+//      removes /user/hadoop1/student_course_grades.csv
+//      moves part-m-00000 (pig output) to /user/hadoop1/student_course_grades.csv
+//      deletes /student_data temp folder
+
+async function executePigCommand() {
+  await execCommand(HDFS_put);
+  await execCommand(pigCommand);
+  await execCommand(`hdfs dfs -rm -r /user/hadoop1/${CSV_hdfs_filepath}`);
+  await execCommand(`hdfs dfs -mv /student_data/part-m-00000 /user/hadoop1/${CSV_hdfs_filepath}`);
+  await execCommand(`hdfs dfs -rm -r /student_data`);
+}
+
 
 async function run() {
   try {

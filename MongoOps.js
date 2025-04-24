@@ -2,7 +2,8 @@ const { mongo, model } = require('mongoose');
 const { insertToOpLog, readFromOpLog, flushOpLog } = require('./opLog');
 const fs = require('fs').promises;
 
-class MongoOps {
+class MongoOps 
+{
     constructor(url) {
         this.url = url;
         this.mongoose = require('mongoose');
@@ -195,6 +196,7 @@ class MongoOps {
         }
 
     }
+    
     async close() {
         await this.mongoose.connection.close();
         console.log('MongoDB connection closed');
