@@ -2,6 +2,8 @@
 const { Client } = require('pg');
 const { insertToOpLog, readFromOpLog, flushOpLog } = require('./opLog');
 const { model } = require('mongoose');
+const fs = require('fs').promises;
+
 
 class PostgreSQLOps {
 
@@ -15,10 +17,10 @@ class PostgreSQLOps {
         this.LstSyncWithMongo = new Date(0).getTime();
     }
 
-    async performOperation(table, fieldName, operation, data) {
+    async performOperation(table, fieldName, operation, data, timestamp = null) {
         const tableName = table;
         let result;
-        console.log('Performing operation:', operation, 'with data:', data);
+        console.log('Performing operation:', operation, 'with data:', data, 'timestamp:', timestamp);
 
         switch (operation) {
             case 'insert':
@@ -34,7 +36,7 @@ class PostgreSQLOps {
                     `UPDATE ${tableName} SET ${fieldName} = $1 WHERE studentid = $2 AND courseid = $3 RETURNING *`,
                     [data.grade, data.studentID, data.courseID]
                 );
-                await insertToOpLog(this.dbname, fieldName, 'update', data, 'Postgres');
+                await insertToOpLog(this.dbname, fieldName, 'update', data, 'Postgres', timestamp);
                 break;
 
 
@@ -51,6 +53,7 @@ class PostgreSQLOps {
             const res = await this.client.query(query, [studentID, courseID]);
             if (res.rows.length > 0) {
                 console.log('Record found:', res.rows[0]);
+                return res.rows[0];
             } else {
                 console.log('Record not found.');
             }
@@ -85,6 +88,7 @@ class PostgreSQLOps {
     }
 
     async merge(dbType) {
+        console.log('Merging operations from', dbType);
         const operations = await readFromOpLog(dbType);
         const postgresOpLog = await readFromOpLog('Postgres');
 
@@ -126,7 +130,7 @@ class PostgreSQLOps {
 
         for (let i = low; i < operations.length; i++) {
             const op = operations[i];
-            const { timestamp, collection, field, type, data } = operation[i];
+            const { timestamp, collection, field, type, data } = op;
             try {
                 newOps.push(op);
             } catch (error) {

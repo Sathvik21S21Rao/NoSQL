@@ -2,11 +2,11 @@ const fs = require('fs').promises;
 
 
 
-async function insertToOpLog(collectionName, fieldName, operationName, operationData, dbType) {
+async function insertToOpLog(collectionName, fieldName, operationName, operationData, dbType, timestamp = null) {
     const operation = {
         collection: collectionName,
         field: fieldName,
-        timestamp: new Date().getTime(),
+        timestamp: timestamp ?? new Date().getTime(), // Use provided timestamp or current time
         type: operationName,
         data: operationData,
     };
