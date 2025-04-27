@@ -2,8 +2,7 @@ const { mongo, model } = require('mongoose');
 const { insertToOpLog, readFromOpLog, flushOpLog } = require('./opLog');
 const fs = require('fs').promises;
 
-class MongoOps 
-{
+class MongoOps {
     constructor(url) {
         this.url = url;
         this.mongoose = require('mongoose');
@@ -33,7 +32,7 @@ class MongoOps
 
     }
 
-    async performOperation(collectionName, fieldName, operation, data) {
+    async performOperation(collectionName, fieldName, operation, data, timestamp = null) {
 
         const collection = this.mongoose.connection.collection(collectionName);
         let result;
@@ -41,17 +40,17 @@ class MongoOps
         switch (operation) {
             case 'insert':
                 result = await collection.insertOne(data);
-                await insertToOpLog(collectionName, fieldName, 'insert', data, 'MongoDB');
+                await insertToOpLog(collectionName, fieldName, 'insert', data, 'MongoDB', timestamp);
                 break;
             case 'update': // to update only grade field
-                console.log('collection', collectionName, 'Updating field:', fieldName, 'with value:', data[fieldName]);
+                console.log('collection', collectionName, 'Updating field:', fieldName, 'with value:', data[fieldName], timestamp);
 
                 result = await collection.updateOne(
                     { studentID: data.studentID, courseID: data.courseID },
                     { $set: { [fieldName]: data[fieldName] } }
                 );
 
-                await insertToOpLog(collectionName, fieldName, 'update', data, 'MongoDB');
+                await insertToOpLog(collectionName, fieldName, 'update', data, 'MongoDB', timestamp);
                 break;
             default:
                 throw new Error('Invalid operation');
@@ -65,6 +64,7 @@ class MongoOps
             const result = await collection.findOne({ studentID, courseID });
             if (result) {
                 console.log('Record found:', result);
+                return result;
             } else {
                 console.log('Record not found.');
             }
@@ -196,7 +196,6 @@ class MongoOps
         }
 
     }
-    
     async close() {
         await this.mongoose.connection.close();
         console.log('MongoDB connection closed');

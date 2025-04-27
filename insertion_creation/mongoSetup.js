@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const csv = require('csv-parser');
 
-mongoose.set('strictQuery', false); // Suppress deprecation warning
+mongoose.set('strictQuery', false);
 
 const connectMongo = async (url) => {
     try {

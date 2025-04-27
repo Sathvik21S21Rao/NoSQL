@@ -6,10 +6,10 @@ const dbName = 'studentgrades';
 const tableName = 'studentgrades';
 
 const adminClient = new Client({
-  user: 'postgres',
+  user: 'vishruthvijay',
   host: 'localhost',
-  database: 'postgres',
-  password: 'pwd',
+  database: 'studentgrades',
+  password: '',
   port: 5432,
 });
 
@@ -37,10 +37,10 @@ async function setupAndLoad() {
     await delay(1000);
 
     const client = new Client({
-      user: 'postgres',
+      user: 'vishruthvijay',
       host: 'localhost',
       database: dbName,
-      password: 'pwd',
+      password: '',
       port: 5432,
     });
 

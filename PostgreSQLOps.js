@@ -2,7 +2,7 @@
 const { Client } = require('pg');
 const { insertToOpLog, readFromOpLog, flushOpLog } = require('./opLog');
 const { model } = require('mongoose');
-const fs = require('fs');
+const fs = require('fs').promises;
 
 
 class PostgreSQLOps {
@@ -15,32 +15,18 @@ class PostgreSQLOps {
         this.dbname = config.database;
         this.LstSyncWithPig = new Date(0).getTime();
         this.LstSyncWithMongo = new Date(0).getTime();
-
-        try {
-            const mergedData = fs.readFileSync('OpLogs/Postgres_LastSync.json', 'utf8');
-            const json = JSON.parse(mergedData);
-            console.log('Read from file:', json);
-            this.LstSyncWithPig = json.LstSyncWithPig;
-            this.LstSyncWithMongo = json.LstSyncWithMongo;
-            console.log('Last sync times:', this.LstSyncWithPig, this.LstSyncWithMongo);
-        }
-        catch (err) {
-            console.error('Could not find Last synced times file:', err);
-            console.log('Initializing with default values');
-        }
-
     }
 
-    async performOperation(table, fieldName, operation, data) {
+    async performOperation(table, fieldName, operation, data, timestamp = null) {
         const tableName = table;
         let result;
-        console.log('Performing operation:', operation, 'with data:', data);
+        console.log('Performing operation:', operation, 'with data:', data, 'timestamp:', timestamp);
 
         switch (operation) {
             case 'insert':
                 result = await this.runQuery(
-                    `INSERT INTO ${tableName} (studentid, courseid, rollno , email , grade) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                    [data.studentID, data.courseID, data.rollno, data.email, data.grade]
+                    `INSERT INTO ${tableName} (studentid, courseid, grade) VALUES ($1, $2, $3) RETURNING *`,
+                    [data.studentID, data.courseID, data.grade]
                 );
                 await insertToOpLog(this.dbname, fieldName, 'insert', data, 'Postgres');
                 break;
@@ -50,7 +36,7 @@ class PostgreSQLOps {
                     `UPDATE ${tableName} SET ${fieldName} = $1 WHERE studentid = $2 AND courseid = $3 RETURNING *`,
                     [data.grade, data.studentID, data.courseID]
                 );
-                await insertToOpLog(this.dbname, fieldName, 'update', data, 'Postgres');
+                await insertToOpLog(this.dbname, fieldName, 'update', data, 'Postgres', timestamp);
                 break;
 
 
@@ -67,6 +53,7 @@ class PostgreSQLOps {
             const res = await this.client.query(query, [studentID, courseID]);
             if (res.rows.length > 0) {
                 console.log('Record found:', res.rows[0]);
+                return res.rows[0];
             } else {
                 console.log('Record not found.');
             }
@@ -101,6 +88,7 @@ class PostgreSQLOps {
     }
 
     async merge(dbType) {
+        console.log('Merging operations from', dbType);
         const operations = await readFromOpLog(dbType);
         const postgresOpLog = await readFromOpLog('Postgres');
 
@@ -142,7 +130,7 @@ class PostgreSQLOps {
 
         for (let i = low; i < operations.length; i++) {
             const op = operations[i];
-            const { timestamp, collection, field, type, data } = operation[i];
+            const { timestamp, collection, field, type, data } = op;
             try {
                 newOps.push(op);
             } catch (error) {
@@ -218,8 +206,8 @@ async function testQueries() {
     const db = new PostgreSQLOps({
         host: '127.0.0.1',
         port: 5432,
-        user: 'postgres',
-        password: 'sid194',
+        user: 'vishruthvijay',
+        password: '',
         database: 'studentgrades',
     });
 
@@ -233,5 +221,5 @@ async function testQueries() {
     }
 }
 
-testQueries();
+// testQueries();
 module.exports = PostgreSQLOps;

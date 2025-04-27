@@ -10,23 +10,20 @@ const PATH_env_var = ':/home/siddharth/Downloads/nosql/assn3/pig/pig/bin'
 const CollectionName = 'studentgrades'
 
 
-function execCommand(command) 
-{
-  return new Promise((resolve, reject) => 
-    {
-    exec(command, (err, stdout, stderr) => 
-      {
-      if (err) 
-        {
-        console.error(`Error executing: ${command}\n${err.message}`);
-        return reject(err);
+async function execCommand(command) {
+    return new Promise((resolve, reject) => {
+      exec(command, (err, stdout, stderr) => {
+        if (err) {
+          console.error(`Error executing: ${command}\n${err.message}`);
+          return reject(err);
         }
-      if (stderr) console.error(`stderr: ${stderr}`);
-      console.log(`stdout for "${command}":\n${stdout}`);
-      resolve(stdout);
+        if (stderr) console.error(`stderr: ${stderr}`);
+        console.log(`stdout for "${command}":\n${stdout}`);
+        resolve(stdout);
+      });
     });
-  });
-}
+  }
+  
 
 class PigOps {
     constructor(outputHdfsPath) {
@@ -46,10 +43,11 @@ class PigOps {
             this.LstSyncWithMongo = json.LstSyncWithMongo || new Date(0).getTime();
             this.LstSyncWithPostgres = json.LstSyncWithPostgres || new Date(0).getTime();
             console.log('Last sync times:', this.LstSyncWithPig, this.LstSyncWithPostgres);
+            // execCommand("hdfs dfs -rm -r /user/hadoop1/temp");
         } 
         catch (err) 
         {
-            console.warn('No previous sync file found or error reading sync file.');
+            console.warn('No previous sync file found or error reading sync file. Or there was an error removing temp');
         }
     }
 
@@ -102,6 +100,8 @@ class PigOps {
     }
 
     async executePigCommand(pigScriptPath) {
+        // console.log("here");
+
         const pigCommand = `pig -x mapreduce -f ${pigScriptPath}`;
         const env = {
             ...process.env,
@@ -114,47 +114,57 @@ class PigOps {
     }
 
 
-    async updatePig(inputHdfsPath, fieldName, operation, data)
+    async updatePig(inputHdfsPath, fieldName, operation, data, timestamp)
     {
         const pigScriptPath = './update_script.pig';
-        
         await this.writePigScript(inputHdfsPath, pigScriptPath, fieldName, operation, data);
 
-        try {
-            await this.executePigCommand(pigScriptPath);
-    
-            const backupPath = `${this.PigFolder}/${inputHdfsPath}.bak`;
-            await execCommand(`hdfs dfs -cp ${this.PigFolder}/${inputHdfsPath} ${backupPath}`);
-    
-            await execCommand(`hdfs dfs -rm -r ${this.PigFolder}/${inputHdfsPath}`);
-            await execCommand(`hdfs dfs -mv ${this.tempOutputPath}/part-m-00000 ${this.PigFolder}/${inputHdfsPath}`);
-    
-            await execCommand(`hdfs dfs -rm -r ${this.tempOutputPath}`);
-    
-            await insertToOpLog(inputHdfsPath, fieldName, operation, data, 'Pig');
-            await execCommand(`hdfs dfs -rm -r ${backupPath}`);
+        // try {
 
-            console.log("Operation logged successfully.");
+        console.log("executing written command now");
+        await this.executePigCommand(pigScriptPath);
+        // console.log("here");
+
+
+        const backupPath = `${this.PigFolder}/${inputHdfsPath}.bak`;
+        
+        // await execCommand(`hdfs dfs -cp ${this.PigFolder}/${inputHdfsPath} ${backupPath}`);
+
+        await execCommand(`hdfs dfs -rm -r ${this.PigFolder}/${inputHdfsPath}`);
+
+        await execCommand(`hdfs dfs -mv ${this.tempOutputPath}/part-m-00000 ${this.PigFolder}/${inputHdfsPath}`);
+
+        await execCommand(`hdfs dfs -rm -r ${this.tempOutputPath}`);
+
+        // await execCommand(`hdfs dfs -rm -r ${backupPath}`);
+
+        await insertToOpLog(inputHdfsPath, fieldName, operation, data, 'Pig', timestamp);
+        console.log("Operation logged successfully.");
     
-        } 
-        catch (err) 
-        {
-            console.error("Error during Pig update, initiating rollback:", err.message);
-            try 
-            {
-                const backupPath = `${this.PigFolder}/${inputHdfsPath}.bak`;
-                await execCommand(`hdfs dfs -cp ${backupPath} ${this.PigFolder}/${inputHdfsPath}`);
-                await execCommand(`hdfs dfs -rm ${backupPath}`);
-                console.log("Rollback successful");
-            }
+        // } 
+        // catch (err) 
+        // {
+        //     console.error("Error during Pig update, initiating rollback:", err.message);
+        //     try 
+        //     {
+        //         const backupPath = `${this.PigFolder}/${inputHdfsPath}.bak`;
+        //         await execCommand(`hdfs dfs -cp ${backupPath} ${this.PigFolder}/${inputHdfsPath}`);
+        //         await execCommand(`hdfs dfs -rm ${backupPath}`);
+        //         try
+        //         {
+        //             await execCommand(`hdfs dfs -rm -r ${this.tempOutputPath}`);
+        //         }
+        //         catch (err) {};
+        //         console.log("Rollback successful");
+        //     }
             
-            catch (rollbackErr)
-            {
-                console.error("Rollback failed:", rollbackErr.message);
-            }
+        //     catch (rollbackErr)
+        //     {
+        //         console.error("Rollback failed:", rollbackErr.message);
+        //     }
     
-            throw err;
-        }
+        //     throw err;
+        // }
     }
 
     async readRecord(inputHdfsPath, studentID, courseID) 
@@ -317,36 +327,36 @@ class PigOps {
     }
 
 
-    async performOperation(inputHdfsPath,field,type,data)
+    async performOperation(inputHdfsPath, field, type, data, timestamp=null)
     {
         if (type === "update")
         {
-            await this.updatePig(inputHdfsPath, field, type, data);
+            await this.updatePig(inputHdfsPath, field, type, data, timestamp);
         }
         if (type === "read")
         {
-            await this.readRecord(inputHdfsPath,field,type,data);
+            await this.readRecord(inputHdfsPath, field, type, data);
         }
     }
 }
 
-async function runPigOps() 
-{
-    const pigOps = new PigOps(`${Pig_HDFS_Path}/${CollectionName}`);
-    await pigOps.initializePigOps();
-    try 
-    {
-        // await pigOps.updatePig('studentgrades', 'grade', 'update', { studentID: 'SID1033', courseID: 'CSE016', grade: 'A+' })
-        // await pigOps.readRecord('student_course_grades.csv', 'SID1033', 'CSE016');
-        await pigOps.merge("Postgres");
-    } 
-    catch (err) 
-    {
-        console.error('PigOps error:', err);
-    }
-}
+// async function runPigOps() 
+// {
+//     const pigOps = new PigOps(`${Pig_HDFS_Path}/${CollectionName}`);
+//     await pigOps.initializePigOps();
+//     try 
+//     {
+//         await pigOps.updatePig('studentgrades', 'grade', 'update', { studentID: 'SID1033', courseID: 'CSE016', grade: 'A+' }, 1)
+//         // await pigOps.readRecord('student_course_grades.csv', 'SID1033', 'CSE016');
+//         await pigOps.merge("Postgres");
+//     } 
+//     catch (err) 
+//     {
+//         console.error('PigOps error:', err);
+//     }
+// }
 
-runPigOps();
+// runPigOps();
 
 
 // comments for reference:

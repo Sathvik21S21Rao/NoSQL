@@ -7,7 +7,7 @@
                     course_id,
                     roll_no,
                     email,
-                    (student_id == 'SID1033' AND course_id == 'CSE016' ? 'D' : grade) AS grade;
+                    (student_id == 'SID1002' AND course_id == 'CSE101' ? 'C+' : grade) AS grade;
     
                 STORE student_data_new INTO '/user/hadoop1/temp' USING PigStorage(',');
             
