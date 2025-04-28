@@ -16,8 +16,8 @@ async function main() {
     const postgres = new PostgreSQLOps({
         host: '127.0.0.1',
         port: 5432,
-        user: 'vishruthvijay',
-        password: '',
+        user: 'postgres',
+        password: 'sid194',
         database: 'studentgrades',
     });
 
