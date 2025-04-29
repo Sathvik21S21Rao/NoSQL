@@ -1,0 +1,21 @@
+
+[1710000000100] >> POSTGRES.SET((SID1378, CSE018), C)
+
+[1710000000110] >> MONGO.SET((SID1378, CSE018), B)
+
+[1710000000120] >> PIG.SET((SID1378, CSE018), C+)
+
+[1710000000130] >> POSTGRES.GET(SID1378, CSE018)
+POSTGRES.RESULT: {"studentid":"SID1378","courseid":"CSE018","rollno":"O7QFVVVO","email":"o7qfvvvo@university.edu","grade":"C"}
+
+[1710000000140] >> MONGO.GET(SID1378, CSE018)
+MONGO.RESULT: {"_id":"681105a5abb0f3b60aae55da","studentID":"SID1378","courseID":"CSE018","rollno":"O7QFVVVO","email":"o7qfvvvo@university.edu","grade":"B","__v":0}
+
+[No timestamp] >> MONGO.MERGE(Postgres)
+MONGO.MERGE completed with Postgres
+
+[No timestamp] >> POSTGRES.MERGE(Pig)
+POSTGRES.MERGE completed with Pig
+
+[1710000000150] >> POSTGRES.GET(SID1378, CSE018)
+POSTGRES.RESULT: {"studentid":"SID1378","courseid":"CSE018","rollno":"O7QFVVVO","email":"o7qfvvvo@university.edu","grade":"C+"}

@@ -1,0 +1,18 @@
+
+[No timestamp] >> MONGO.SET((SID1081, CSE016), C)
+
+[No timestamp] >> POSTGRES.SET((SID1081, CSE016), D)
+
+[No timestamp] >> PIG.SET((SID1081, CSE016), B)
+
+[No timestamp] >> MONGO.MERGE(Postgres)
+MONGO.MERGE completed with Postgres
+
+[No timestamp] >> PIG.MERGE(MongoDB)
+PIG.MERGE completed with MongoDB
+
+[No timestamp] >> POSTGRES.GET(SID1081, CSE016)
+POSTGRES.RESULT: {"studentid":"SID1081","courseid":"CSE016","rollno":"D1SGWJ3W","email":"d1sgwj3w@university.edu","grade":"D"}
+
+[No timestamp] >> MONGO.GET(SID1081, CSE016)
+MONGO.RESULT: {"_id":"681105a5abb0f3b60aae55de","studentID":"SID1081","courseID":"CSE016","rollno":"D1SGWJ3W","email":"d1sgwj3w@university.edu","grade":"D","__v":0}

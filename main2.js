@@ -4,7 +4,7 @@ const MongoOps = require('./MongoOps');
 const PostgreSQLOps = require('./PostgreSQLOps');
 const PigOps = require('./PigOps');
 
-const outputLog = fs.createWriteStream('testcase.out', { flags: 'w' });
+const outputLog = fs.createWriteStream('testcase5.out', { flags: 'w' });
 
 function logOutput(...args) {
     console.log(...args);
@@ -28,7 +28,7 @@ async function main() {
     await pig.initializePigOps();
 
     const rl = readline.createInterface({
-        input: fs.createReadStream('testcase.in'),
+        input: fs.createReadStream('testcase5.in'),
         crlfDelay: Infinity,
     });
 

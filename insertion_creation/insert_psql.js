@@ -6,10 +6,10 @@ const dbName = 'studentgrades';
 const tableName = 'studentgrades';
 
 const adminClient = new Client({
-  user: 'vishruthvijay',
+  user: 'postgres',
   host: 'localhost',
   database: 'studentgrades',
-  password: '',
+  password: 'sid194',
   port: 5432,
 });
 
@@ -24,9 +24,9 @@ async function setupAndLoad() {
       WHERE datname = '${dbName}' AND pid <> pg_backend_pid();
     `);
 
-    await adminClient.query(`DROP DATABASE IF EXISTS ${dbName}`);
-    await adminClient.query(`CREATE DATABASE ${dbName}`);
-    console.log(`Database ${dbName} created`);
+    // await adminClient.query(`DROP DATABASE IF EXISTS ${dbName}`);
+    // await adminClient.query(`CREATE DATABASE ${dbName}`);
+    // console.log(`Database ${dbName} created`);
 
     await adminClient.end();
 
@@ -37,10 +37,10 @@ async function setupAndLoad() {
     await delay(1000);
 
     const client = new Client({
-      user: 'vishruthvijay',
+      user: 'postgres',
       host: 'localhost',
       database: dbName,
-      password: '',
+      password: 'sid194',
       port: 5432,
     });
 

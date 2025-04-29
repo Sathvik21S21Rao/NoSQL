@@ -1,0 +1,3 @@
+
+[No timestamp] >> MONGO.GET(SID1310,CSE013)
+MONGO.RESULT: {"_id":"6810ebf865f44ff40554d13b","studentID":"SID1310","courseID":"CSE013","rollno":"MOPZ4V1Q","email":"mopz4v1q@university.edu","grade":"C+","__v":0}

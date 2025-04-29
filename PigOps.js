@@ -221,7 +221,7 @@ class PigOps {
         {
             lastSyncTime = this.LstSyncWithPostgres;
         }
-
+        
         let low = 0;
         let high = operations.length - 1;
 
@@ -404,7 +404,7 @@ class PigOps {
         const newGrade = data[fieldName];
 
         const pigScript = `
-             student_data_new = FOREACH student_data GENERATE
+             student_data = FOREACH student_data GENERATE
                     student_id,
                     course_id,
                     roll_no,
@@ -419,7 +419,7 @@ class PigOps {
     async BulkPigFileWriteEnd(inputHdfsPath)
     {
         const pigScript = `
-            STORE student_data_new INTO '${this.tempOutputPath}' USING PigStorage(',');
+            STORE student_data INTO '${this.tempOutputPath}' USING PigStorage(',');
         `;
         await fs.appendFile(pigScriptPath, pigScript, 'utf8');
         console.log('Pig script written to file:', pigScriptPath);

@@ -1,0 +1,31 @@
+
+[1710000000030] >> MONGO.SET((SID1002, CSE101), C)
+
+[1710000000040] >> PIG.SET((SID1002, CSE101), C+)
+
+[1710000000050] >> MONGO.SET((SID1001, CSE101), A-)
+
+[1710000000060] >> MONGO.SET((SID1002, CSE101), A-)
+
+[1710000000070] >> POSTGRES.GET(SID1001, CSE101)
+POSTGRES.RESULT: {"studentid":"SID1001","courseid":"CSE101","rollno":"TESTSTU1","email":"teststu1@university.edu","grade":"B"}
+
+[1710000000080] >> POSTGRES.SET((SID1033,CSE016),F)
+
+[1710000000090] >> MONGO.GET(SID1001, CSE101)
+MONGO.RESULT: {"_id":"681105a5abb0f3b60aae59bf","studentID":"SID1001","courseID":"CSE101","rollno":"TESTSTU1","email":"teststu1@university.edu","grade":"A-","__v":0}
+
+[No timestamp] >> PIG.MERGE(MongoDB)
+PIG.MERGE completed with MongoDB
+
+[No timestamp] >> PIG.MERGE(Postgres)
+PIG.MERGE completed with Postgres
+
+[No timestamp] >> MONGO.MERGE(Pig)
+MONGO.MERGE completed with Pig
+
+[1710000000100] >> MONGO.GET(SID1001, CSE101)
+MONGO.RESULT: {"_id":"681105a5abb0f3b60aae59bf","studentID":"SID1001","courseID":"CSE101","rollno":"TESTSTU1","email":"teststu1@university.edu","grade":"A-","__v":0}
+
+[1710000000110] >> POSTGRES.GET(SID1002, CSE101)
+POSTGRES.RESULT: {"studentid":"SID1002","courseid":"CSE101","rollno":"TESTSTU2","email":"teststu2@university.edu","grade":"C"}
